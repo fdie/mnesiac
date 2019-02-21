@@ -112,7 +112,7 @@ defmodule Mnesiac.StoreManager do
   end
 
   defp stores do
-    Application.get_env(:mnesiac, :stores)
+    Application.get_env(:mnesiac, :stores, [])
   end
 
   defp table_load_timeout do

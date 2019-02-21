@@ -61,6 +61,35 @@ defmodule Mnesiac do
   end
 
   @doc """
+  Leave a Mnesia cluster
+  """
+  def leave_cluster(cluster_node) do
+    case {Node.self(), :net_adm.ping(cluster_node)} do
+      {cluster_node, _} ->
+        cluster = Mnesiac.running_nodes() -- cluster_node
+        leave(cluster, cluster_node)
+      {_, :pong} ->
+        :rpc.call(cluster_node, ExCluster, :leave, [cluster_node], 10000)
+      {_, :pang} -> StoreManager.del_schema_copy(cluster_node)
+    end
+  end
+
+  def leave([], cluster_node) do
+      {:error, {:no_cluster, cluster_node}};
+  end
+
+  def leave([Master|_], cluster_node) do
+    with :ok <- ensure_stopped(),
+      :ok <- :rpc.call(Master, :mnesia, :del_table_copy, [:schema, cluster_node]),
+      :ok <- StoreManager.delete_schema() do
+    else
+      {:error, reason} ->
+        Logger.debug(fn -> "[mnesiac:#{node()}] #{reason}" end)
+        {:error, reason}
+    end
+  end
+
+  @doc """
   Cluster status
   """
   def cluster_status do
