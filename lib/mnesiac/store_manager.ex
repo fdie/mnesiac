@@ -65,6 +65,9 @@ defmodule Mnesiac.StoreManager do
           Logger.info("[mnesiac:#{node()}] #{inspect(data_mapper)}: no remote data to copy found.")
           {:error, :no_remote_data_to_copy}
 
+        {local, remote} when local == remote ->
+          apply(data_mapper, :copy_store, [])
+
         {_local, _remote} ->
           apply(data_mapper, :resolve_conflict, [cluster_node])
       end
